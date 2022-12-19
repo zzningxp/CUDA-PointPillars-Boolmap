@@ -1,0 +1,6 @@
+*.pth
+*.onnx
+*.so
+*__pycache__/
+tool/openpcdet-hova88/build
+tool/run_export.sh

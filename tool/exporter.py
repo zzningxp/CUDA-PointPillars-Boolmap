@@ -31,6 +31,7 @@ from onnxsim import simplify
 import os, sys
 from exporter_paramters import export_paramters as export_paramters
 from simplifier_onnx import simplify_onnx as simplify_onnx
+from torchsummary import summary
 
 class DemoDataset(DatasetTemplate):
     def __init__(self, dataset_cfg, class_names, training=True, root_path=None, logger=None, ext='.bin'):
@@ -71,7 +72,6 @@ class DemoDataset(DatasetTemplate):
         data_dict = self.prepare_data(data_dict=input_dict)
         return data_dict
 
-
 def parse_config():
     parser = argparse.ArgumentParser(description='arg parser')
     parser.add_argument('--cfg_file', type=str, default='cfgs/kitti_models/pointpillar.yaml',
@@ -82,11 +82,9 @@ def parse_config():
     parser.add_argument('--ext', type=str, default='.bin', help='specify the extension of your point cloud data file')
 
     args = parser.parse_args()
-
     cfg_from_yaml_file(args.cfg_file, cfg)
 
     return args, cfg
-
 
 def main():
     args, cfg = parse_config()
@@ -97,7 +95,6 @@ def main():
         dataset_cfg=cfg.DATA_CONFIG, class_names=cfg.CLASS_NAMES, training=False,
         root_path=Path(args.data_path), ext=args.ext, logger=logger
     )
-
     model = build_network(model_cfg=cfg.MODEL, num_class=len(cfg.CLASS_NAMES), dataset=demo_dataset)
     model.load_params_from_file(filename=args.ckpt, logger=logger, to_cpu=True)
     model.cuda()
@@ -105,33 +102,20 @@ def main():
     np.set_printoptions(threshold=np.inf)
     with torch.no_grad():
 
-      MAX_VOXELS = 10000
-
-      batch_size = 1
-
-      dummy_voxel_features = torch.zeros(
-          (MAX_VOXELS, 32, 4),
-          dtype=torch.float32,
-          device='cuda:0')
-
-      dummy_voxel_num_points = torch.zeros(
-          (MAX_VOXELS),
-          dtype=torch.float32,
-          device='cuda:0')
-
-      dummy_coords = torch.zeros(
-          (MAX_VOXELS, 4),
-          dtype=torch.float32,
-          device='cuda:0')
+      NUM_POINTS = 100000
+      input_dict = {
+      "points" : torch.zeros([NUM_POINTS, 5]).cuda(),
+      "batch_size" : torch.tensor(1).cuda()
+      }
 
       torch.onnx.export(model,                   # model being run
-          (dummy_voxel_features, dummy_voxel_num_points, dummy_coords), # model input (or a tuple for multiple inputs)
+          input_dict, # model input (or a tuple for multiple inputs)
           "./pointpillar.onnx",    # where to save the model (can be a file or file-like object)
           export_params=True,        # store the trained parameter weights inside the model file
           opset_version=11,          # the ONNX version to export the model to
           do_constant_folding=True,  # whether to execute constant folding for optimization
           keep_initializers_as_inputs=True,
-          input_names = ['input', 'voxel_num_points', 'coords'],   # the model's input names
+          input_names = ['input'],   # the model's input names
           output_names = ['cls_preds', 'box_preds', 'dir_cls_preds'], # the model's output names
           )
       onnx_model = onnx.load("./pointpillar.onnx")  # load onnx model

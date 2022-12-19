@@ -73,7 +73,7 @@ def export_paramters(cfg):
       print(MAX_POINTS_PER_VOXEL)
       print(MAX_NUMBER_OF_VOXELS)
 
-  for item in cfg.DATA_CONFIG.DATA_AUGMENTOR.AUG_CONFIG_LIST :
+  for item in cfg.DATA_CONFIG['DATA_AUGMENTOR'].AUG_CONFIG_LIST :
     if (item.NAME == "gt_sampling") :
       NUM_POINT_FEATURES = item.NUM_POINT_FEATURES
       print(NUM_POINT_FEATURES)
