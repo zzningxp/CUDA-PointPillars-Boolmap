@@ -1,24 +1,22 @@
-# PointPillars inference with TensorRT
-This repository contains sources and model for [pointpillars](https://arxiv.org/abs/1812.05784) inference using TensorRT.
-The model is created by [OpenPCDet](https://github.com/open-mmlab/OpenPCDet) and modified by onnx_graphsurgeon.
+# PointPillars with BOOLVFE inference in TensorRT
 
-Inference has four parts:
-generateVoxels: convert points cloud into voxels which has 4 channles
-generateFeatures: convert voxels into feature maps which has 10 channles
-Inference: convert feature maps to raw data of bounding box, class source and direction
-Postprocessing: parse bounding box, class source and direction
+This repository implemnts the inference of [PointPillars-ROS with BOOLMAP VFE](https://github.com/zzningxp/PointPillars-ROS) using TensorRT. The struct of the model is [PointPillars_MultiHead_40FPS](https://github.com/hova88/PointPillars_MultiHead_40FPS) combined with [boolVFE](https://github.com/Livox-SDK/livox_detection).
+
+The original inference time of pointpillars in [PointPillars-ROS with BOOLMAP VFE](https://github.com/zzningxp/PointPillars-ROS) is around 42 ms(backbone) in Xavier. In this reposity, the inferece time can reach 16ms in Xavier by using fp16, though there is an unsovling problem in this impl, which makes the output indexes of bbox mismatches with the indexes of cls and dir. This might be caused by a bug of TensorRT. If we enable the fp32 in Xavier, all outputs will math correctly, but the inference time will extend to 46 ms. we are going to fix this problem soon.
+
+
 
 ## Data
 The demo use the data from KITTI Dataset and more data can be downloaded following the linker
 [GETTING_STARTED](https://github.com/open-mmlab/OpenPCDet/blob/master/docs/GETTING_STARTED.md)
 
 ## Model
-The onnx file can be converted from a model trainned by OpenPCDet with the tool in the demo.
+The onnx file can be converted from a model trainned by [PointPillars-ROS with BOOLMAP VFE](https://github.com/zzningxp/PointPillars-ROS) with the tool in the demo.
 
 ## Build
 
 ### Prerequisites
-To build the pointpillars inference, **TensorRT** with PillarScatter layer and **CUDA** are needed. PillarScatter layer plugin is already implemented as a plugin for TRT in the demo.
+To build the pointpillars inference, **TensorRT** with BoolVFE layer and **CUDA** are needed. BoolVFE layer plugin is already implemented as a plugin for TRT in the demo.
 
 - Jetpack 4.5
 - TensorRT v7.1.3
@@ -50,20 +48,20 @@ $ ./demo
 ```
 |                   | GPU/ms | 
 | ----------------- | ------ |
-| generateVoxels    | 0.22   |
-| generateFeatures  | 0.21   |
-| Inference         | 30.75  |
-| Postprocessing    | 3.19   |
+| Inference         | 16.41  |
+| Postprocessing    | 9.61   |
+```
+
+- FP32
+```
+|                   | GPU/ms | 
+| ----------------- | ------ |
+| Inference         | 42.40  |
+| Postprocessing    | 6.14   |
 ```
 ## Note
-1. GPU processes all points at the same time and points selected form points cloud for a voxel randomly, so the output of generateVoxels has random value.
-Because CPU will select the first 32 points, the output of generateVoxels by CPU has fixed value.
-
-2. The demo will cache the onnx file to improve performance.
+1. The demo will cache the onnx file to improve performance.
 If a new onnx will be used, please remove the cache file in "./model"
-
-3. MAX_VOXELS in params.h is used to allocate cache during inference.
-Decrease the value to save memory.
 
 ## References
 

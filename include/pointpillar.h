@@ -85,12 +85,15 @@ class PointPillar {
     unsigned int features_input_size_ = 0;
 
     //output of TRT -- input of post-process
+    float *spatial_features = nullptr;
+
     float *cls_output_ = nullptr;
     float *box_output_ = nullptr;
     float *dir_cls_output_ = nullptr;
     unsigned int cls_size_;
     unsigned int box_size_;
     unsigned int dir_cls_size_;
+    unsigned int spatial_features_size_;
 
     //output of post-process
     float *bndbox_output_ = nullptr;

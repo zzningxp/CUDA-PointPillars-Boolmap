@@ -187,11 +187,49 @@ inline float box_overlap(const Bndbox &box_a, const Bndbox &box_b) {
     return fabs(area) / 2.0;
 }
 
+
+template <typename T>
+void swap_warp(T& a , T& b , T& swp){ swp=a; a=b; b=swp;}
+void quicksort_warp(float* score, int* index, int start,int end){
+    if (start>=end) return ;
+    float pivot=score[end];
+    float value_swp;
+    int index_swp;
+    //set a pointer to divide array into two parts
+    //one part is smaller than pivot and another larger
+    int pointer=start;
+    for (int i = start; i < end; i++) 
+    {
+        if (score[i] > pivot) {
+            if (pointer!=i) {
+                //swap score[i] with score[pointer]
+                //score[pointer] behind larger than pivot
+                swap_warp<float>(score[i] , score[pointer] , value_swp) ;
+                swap_warp<int>(index[i] , index[pointer] , index_swp) ;
+            }
+            pointer++;
+        }
+    }
+    //swap back pivot to proper position
+    swap_warp<float>(score[end] , score[pointer] , value_swp) ;
+    swap_warp<int>(index[end] , index[pointer] , index_swp) ;
+    quicksort_warp(score,index,start,pointer-1);
+    quicksort_warp(score,index,pointer+1,end);
+    return ;
+}
+
+void quicksort_kernel(float* score, int* indexes, int len )
+{
+    quicksort_warp(score,indexes ,0,len-1);
+}
+
 int nms_cpu(std::vector<Bndbox> bndboxes, const float nms_thresh, std::vector<Bndbox> &nms_pred)
 {
     std::sort(bndboxes.begin(), bndboxes.end(),
               [](Bndbox boxes1, Bndbox boxes2) { return boxes1.score > boxes2.score; });
+
     std::vector<int> suppressed(bndboxes.size(), 0);
+
     for (size_t i = 0; i < bndboxes.size(); i++) {
         if (suppressed[i] == 1) {
             continue;

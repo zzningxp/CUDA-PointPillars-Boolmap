@@ -57,10 +57,10 @@ __global__ void postprocess_kernal(const float *cls_input,
   {
       return;
   }
-  int col = loc_index % feature_x_size;
-  int row = loc_index / feature_x_size;
-  float x_offset = min_x_range + col * (max_x_range - min_x_range) / (feature_x_size - 1);
-  float y_offset = min_y_range + row * (max_y_range - min_y_range) / (feature_y_size - 1);
+  int col = loc_index % (feature_x_size);
+  int row = loc_index / (feature_x_size);
+  float x_offset = min_x_range + col * (max_x_range - min_x_range) / (feature_x_size  - 1);
+  float y_offset = min_y_range + row * (max_y_range - min_y_range) / (feature_y_size  - 1);
   int cls_offset = loc_index * num_anchors * num_classes + ith_anchor * num_classes;
   float dev_cls[2] = {-1, 0};
 
@@ -85,7 +85,6 @@ __global__ void postprocess_kernal(const float *cls_input,
     float z_offset = anchor_ptr[2] / 2 + anchor_bottom_heights[ith_anchor / 2];
     float anchor[7] = {x_offset, y_offset, z_offset, anchor_ptr[0], anchor_ptr[1], anchor_ptr[2], anchor_ptr[3]};
     float *box_encodings = box_input + box_offset;
-
     float xa = anchor[0];
     float ya = anchor[1];
     float za = anchor[2];
@@ -145,6 +144,7 @@ cudaError_t postprocess_launch(const float *cls_input,
                       cudaStream_t stream)
 {
   int bev_size = feature_x_size * feature_y_size;
+
   dim3 threads (num_anchors);
   dim3 blocks (bev_size);
 
